@@ -1,7 +1,7 @@
 class ImageUploader < CarrierWave::Uploader::Base
   # Include RMagick or MiniMagick support:
   # include CarrierWave::RMagick
-  # include CarrierWave::MiniMagick
+  include CarrierWave::MiniMagick
 
   # Choose what kind of storage to use for this uploader:
   storage :file
@@ -29,27 +29,27 @@ class ImageUploader < CarrierWave::Uploader::Base
     "/images/fallback/" + [version_name, "default.png"].compact.join("_")
   end
 
-  # Process files as they are uploaded:
-  # process scale: [200, 300]
-  #
-  # def scale(width, height)
-  #   # do something
-  # end
+  def filename
+    "#{secure_token}.#{file.extension}" if original_filename.present?
+  end
 
-  # Create different versions of your uploaded files:
-  # version :thumb do
-  #   process resize_to_fit: [50, 50]
-  # end
+  process convert: "jpg"
 
-  # Add an allowlist of extensions which are allowed to be uploaded.
-  # For images you might use something like this:
-  # def extension_allowlist
-  #   %w(jpg jpeg gif png)
-  # end
+  # ファイル名の拡張子を jpg に変更
+  def filename
+    super.chomp(File.extname(super)) + ".jpg" if original_filename.present?
+  end
 
-  # Override the filename of the uploaded files:
-  # Avoid using model.id or version_name here, see uploader/store.rb for details.
-  # def filename
-  #   "something.jpg" if original_filename
-  # end
+  version :thumb do
+    process resize_to_fit: [100, 100]
+  end
+
+  process resize_to_limit: [200, 300]
+
+  protected
+
+  def secure_token
+    var = :"@#{mounted_as}_secure_token"
+    model.instance_variable_get(var) or model.instance_variable_set(var, SecureRandom.uuid)
+  end
 end
